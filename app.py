@@ -441,12 +441,15 @@ st.markdown('<div class="section-title">🌎 Mapa de Cobertura y Ventas</div>', 
 st.markdown('<div class="chart-card"><h4>🌎 Mapa Geográfico de Puntos de Venta <span class="chart-tag">Interactivo</span></h4>', unsafe_allow_html=True)
 
 pdv_geo = pdv_master[['Nombre', 'Latitude', 'Longitude', 'Provincia', 'Ciudad', 'Categoria']].copy()
+pdv_geo['Latitude'] = pd.to_numeric(pdv_geo['Latitude'], errors='coerce')
+pdv_geo['Longitude'] = pd.to_numeric(pdv_geo['Longitude'], errors='coerce')
 pdv_geo = pdv_geo.dropna(subset=['Latitude', 'Longitude']).rename(columns={'Nombre': 'PDV'})
 sales_by_pdv = v.groupby('PDV', as_index=False)['VALOR'].sum()
 visited_set = set(imp['PDV'].unique())
-pdv_map = pdv_geo.merge(sales_by_pdv, on='PDV', how='left').fillna(0)
+pdv_map = pdv_geo.merge(sales_by_pdv, on='PDV', how='left')
+pdv_map['VALOR'] = pd.to_numeric(pdv_map['VALOR'], errors='coerce').fillna(0)
 pdv_map['Estado'] = pdv_map.apply(lambda r: '🟢 Con Venta' if r['VALOR'] > 0 else ('🔵 Visitado' if r['PDV'] in visited_set else '⚪ No Visitado'), axis=1)
-pdv_map['bubble'] = pdv_map['VALOR'].apply(lambda x: max(x, 3))
+pdv_map['bubble'] = pdv_map['VALOR'].apply(lambda x: max(float(x), 3.0))
 
 if not pdv_map.empty:
     fig = px.scatter_mapbox(pdv_map, lat='Latitude', lon='Longitude', size='bubble', color='Estado',
